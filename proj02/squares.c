@@ -17,36 +17,37 @@ int drawSquare(int size, char fill);
 
 //Main function to control input and exit conditions
 int main(void){
-	//Allocate pointers because I don't want to use & in scanf
-	int *size = (int*)malloc(sizeof(int));
-	char *fill = (char*)malloc(sizeof(char));
+	//Variables to hold the inputs from stdin
+	int size;
+	char fill;
 	
 	//Flag to control output of newline.
 	//Prevents extra newline from being printed at beginning of output
 	int result = -1;
 	
 	//Check that size is found
-	if(!scanf("%d", size)){
+	if(!scanf("%d", &size)){
 		fprintf(stderr, "Size not found in input.\n");
 		return 1;
-	} else if(*size <= 0){ //Check that size is in correct range
+	} else if(size <= 0){ //Check that size is in correct range
 		fprintf(stderr, "Size must be positive and nonzero.\n");
 		return 1;
 	}
 	//Scan characters until no more characters can be scanned
 	//and use drawSquare to draw a square with each scanned char
-	while(scanf("%c", fill) > 0){
+	while(scanf("%c", &fill) > 0){
 		if(result != -1)
 			printf("\n");
-		result = drawSquare(*size, *fill); //Derefence pointers to values
+		result = drawSquare(size, fill);
 	}
-	//Free allocated pointers to avoid (insignificant) memory leak
-	free(size);
-	free(fill);
 	return 0;
 }
 
-//drawSquare draws a single square to stdout using size and fill.
+/*
+ * drawSquare draws a single square to stdout using size and fill.
+ * If fill is not printable, drawSquare prints an error message and fails to draw a square.
+ * Returns 1 on failure, 0 on success
+ */
 int drawSquare(int size, char fill){
 	int i, j;
 	//Check that fill is printable and print error and hex code if not
