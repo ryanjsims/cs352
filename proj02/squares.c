@@ -26,7 +26,7 @@ int main(void){
 	int result = -1;
 	
 	//Check that size is found
-	if(!scanf("%d", &size)){
+	if(scanf("%d", &size) != 1){
 		fprintf(stderr, "Size not found in input.\n");
 		return 1;
 	} else if(size <= 0){ //Check that size is in correct range
