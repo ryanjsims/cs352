@@ -1,0 +1,136 @@
+#! /bin/bash
+
+
+# confirm that we have the three test executables
+if [[ ! -f example_dumpChars || ! -f example_intConvert ||
+      ! -f example_reverseWords ]]
+then
+  echo "ERROR: One (or more) of the three example_\* executables is missing" 1>&2
+  exit 1
+fi
+
+
+# confirm that we have at least one of each of the required testcases;
+if [[ $(ls -1 test_dumpChars_* 2>/dev/null)   = "" || $(ls -1 test_intConvert_* 2>/dev/null)   = "" || $(ls -1 test_reverseWords_* 2>/dev/null) = "" ]]
+then
+  echo "WARNING: One or more of the programs had no testcases.  That program will receive a score of 0 for this program." 1>&2
+fi
+
+
+# confirm that there is a project directory.
+if [[ ! -f dumpChars.c || ! -f intConvert.c || ! -f reverseWords.c ]]
+then
+  echo "WARNING: One or more of the three .c files is missing; that program will receive a score of 0 for this program." 1>&2
+fi
+
+
+
+# NOW A BIG LOOP
+#
+# Each iteration of this loop works basically like the 'silly' test code
+# above - the main difference is that instead of having a pre-ordained
+# set of testcases (which are passed as command-line arguments), we have
+# multiple testcase files, which are piped as stdin.
+
+for PROG in dumpChars intConvert reverseWords
+do
+  echo "------------- BEGIN TESTING OF ${PROG}.c -------------"
+#  cd $PROG || continue    # skip this program if we can't cd into the directory.
+
+  # clean up the old artifacts.  Confirm that they were removed.
+  rm $PROG compile.out 2>/dev/null
+
+  if [[ -f $PROG || -f compile.out ]]
+  then
+    echo "ERROR: Could not remove the file '$PROG' or 'compile.out" 1>&2
+    exit 1
+  fi
+
+  # build the executable; collect the output (if any), and the exit status
+  gcc -Wall -std=gnu99 -o ${PROG} ${PROG}.c -lm >compile.out 2>&1
+  RC=$?
+
+  # -s asks "does the file exist and has a size greater than zero".
+  # See # 'man test'
+  if [[ $RC != 0 || -s compile.out ]]
+  then
+    COMPILE_PENALTY=1
+  echo "ERROR: ${PROG}.c did not compile perfectly.  Either warnings or errors were produced, or else the exit status from gcc was nonzero."
+  else
+    COMPILE_PENALTY=0
+    rm compile.out
+  fi
+
+  # do the tests
+
+  ATTEMPT=0
+  PASS=0
+
+  for TESTCASE in $(ls -1 test_${PROG}_*)
+  do
+    echo "    *** testcase: $TESTCASE"
+
+    # for clarity below, use variables for the 4 filenames.
+    eo=$PROG.$TESTCASE.example.stdout
+    ee=$PROG.$TESTCASE.example.stderr
+    so=$PROG.$TESTCASE.student.stdout
+    se=$PROG.$TESTCASE.student.stderr
+
+    # clean up old artifacts
+    rm $eo $ee $so $se 2>/dev/null
+
+    cat $TESTCASE | timeout 10 ./example_$PROG >$eo 2>$ee
+    EXAMPLE_RC=$?
+
+    cat $TESTCASE | timeout 10         ./$PROG >$so 2>$se
+    STUDENT_RC=$?
+
+    if [[ $(diff $eo $so) != "" ||
+          -s $ee && ! -s $se    ||   # spurious stderr
+        ! -s $ee &&   -s $se    ||   # missing stderr
+          $STUDENT_RC != $EXAMPLE_RC ]]
+    then
+      echo "ERROR: $PROG: Testcase '$TESTCASE' failed." 1>&2
+    else
+      PASS=$(( PASS+1 ))
+      rm $eo $ee $so $se
+    fi
+
+    ATTEMPT=$(( ATTEMPT+1 ))
+  done
+
+  if [[ $PROG != reverseWords ]]
+  then
+    POSSIBLE=20
+  else
+    POSSIBLE=30
+  fi
+
+  if [[ $ATTEMPT -eq 0 ]]
+  then
+    echo "WARNING: The program '$PROG' did not have any testcases, you earn 0 points for this program." 1>&2
+    THIS_SCORE=0
+  else
+    # total up the score for this program
+    THIS_SCORE=$(( POSSIBLE*PASS / ATTEMPT ))
+
+    if [[ $COMPILE_PENALTY = 1 ]]
+    then
+      THIS_SCORE=$(( THIS_SCORE / 2 ))
+    fi
+  fi
+
+  echo "SCORE FOR '$PROG': ${THIS_SCORE} out of ${POSSIBLE} points"
+  echo "------------- END TESTING OF ${PROG}.c -------------"
+
+#  cd ..
+
+  SCORE_SO_FAR=$(( SCORE_SO_FAR + THIS_SCORE ))
+done
+
+
+echo "----------------------------"
+echo "AUTOMATED SCORE: $SCORE_SO_FAR"
+echo "----------------------------"
+
+
