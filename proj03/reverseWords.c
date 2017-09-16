@@ -44,9 +44,6 @@ int main()
 		default:
 			return 1; //Should never happen
 	}
-	for(int i = 4; i >= -64; i--)
-		printf("%c", buf1[i]);
-	printf("\n");
 	while(scanf(formatString, buf1) > 0) {
 		int len = strlen(buf1) - 1;
 		for(int i = len; i >= 0; i--)
