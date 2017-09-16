@@ -9,7 +9,7 @@ int main(){
 	while(rc >= 0){
 		if(rc == 0){
 			scanf("%c", &err);
-			printf("OOPS, the character 0x%02x='%c' is not part of aan integer!\n", err, err);
+			printf("OOPS, the character 0x%02x='%c' is not part of an integer!\n", err, err);
 			numErr++;
 			exit = 1;
 		} else {
