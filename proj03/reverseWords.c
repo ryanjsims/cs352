@@ -34,6 +34,7 @@ int main()
 		fprintf(stderr, "Int was not 0 or 1!\n");
 		return 1;
 	}
+	int returnValue = 0;
 	switch(bugSwitch){
 		case 0:
 			formatString = "%31s";
@@ -50,9 +51,11 @@ int main()
 			printf("%c", buf1[i]);
 		printf("\n");
 		printf("\tDEBUG: buf1='%s' buf2='%s' buf3='%s'\n", buf1, buf2, buf3);
-		if(len > 31)
+		if(len > 31){
 			printf("\tOOPS: The word to reverse was too long!  len=%d\n", len + 1);
+			returnValue = 1;
+		}
 	}
-	return 0;
+	return returnValue;
 }
 
