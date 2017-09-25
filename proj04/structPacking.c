@@ -2,7 +2,9 @@
  * Programmer: Ryan Sims
  * Date: 9/25/2017
  *
- * 
+ * structPacking casts between different struct pointers to see
+ * what happens to the memory.
+ * Returns 1 if any input errors are detected, else returns 0;
  */
 
 #include "proj04.h"
