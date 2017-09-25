@@ -13,10 +13,13 @@ int main(){
 	Baz *fooBaz = (Baz*)array;
 	unsigned char *arrayAsChars = (unsigned char*)array;
 	int *fooInt = (int*)array;
-	unsigned char fill;
-	int rc = scanf("%hhu", &fill);
+	int fill;
+	int rc = scanf("%d", &fill);
 	if(!(rc > 0)){
-		fprintf(stderr, "Could not find a byte-sized int to fill the array.\n");
+		fprintf(stderr, "Could not read int to fill the array.\n");
+		return 1;
+	} else if(fill > 255 || fill < 0){
+		fprintf(stderr, "The input was out of the [0, 255] range.\n");
 		return 1;
 	}
 	for(int i = 0; i < 4 * sizeof(Foo); i++){
