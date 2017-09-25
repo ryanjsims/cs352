@@ -1,9 +1,12 @@
 /* intRollingBuffer.c
-* Programmer: Ryan Sims
-* Date: 9/25/2017
-*
-* 
-*/
+ * Programmer: Ryan Sims
+ * Date: 9/25/2017
+ *
+ * intRollingBuffer maintains a buffer of ints, and accepts input from the user
+ * to modify the buffer.
+ * returns 1 on any errors allocating buffer or reading input.
+ * returns 0 if all inputs were legal and no issues occurred.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +22,7 @@ int main(){
 	int rc = scanf("%d", &size);
 	int ret = 0;
 	
+	//Check that size read and entered correctly.
 	if(rc <= 0) {
 		fprintf(stderr, "Could not read size of buffer!\n");
 		return 1;
@@ -27,25 +31,31 @@ int main(){
 		return 1;
 	}
 
+	//Allocate buffer, check for errors
 	buffer = (int*)malloc((size + 2) * sizeof(int));
 	if(buffer == NULL){
 		fprintf(stderr, "Buffer could not be allocated.\n");
 		return 1;
 	}
 
+	//Fill buffer with initial values.
 	*buffer = 0xdeadbeef;
 	*(buffer + size + 1) = 0xc0d4f00d;
 	for(int i = 1; i <= size; i++){
 		*(buffer + i) = i;
 	}
 
+	//Accept input from the user until EOF passed
 	while(rc >= 0){
 		if(rc == 0){
+			//If illegal input, print message and set return value
 			printf("OOPS: Non-integer input!  ");
 			rc = scanf("%c", &err);
 			printf("0x%02x='%c'\n", err, err);
 			ret = 1;
 		} else {
+			//Else insert the entered value and print 
+			//the buffer in decimal and hex format
 			if(err != 7)
 				insertInOrder(buffer, size, toAdd);
 			dumpInts(buffer, size + 1, 0);
@@ -53,18 +63,24 @@ int main(){
 			err = 'b';
 		}
 		rc = scanf("%d", &toAdd);
+		//If user has more input, print new line
 		if(rc >= 0)
 			printf("\n");
 	}
 	return ret;
 }
 
+/*
+ * dumpInts prints out count ints in array in either hex or dec format
+ * If hex != 0, print in hex, otherwise dec. No returns.
+ */
 void dumpInts(int *array, int count, int hex){
 	char *format = "% 10d";
 	if(hex){
 		format = " 0x%08x";
 	}
 	for(int i = 0; i < count; i++){
+		//If value shorter than 10 digits, add space
 		if(*(array + i) > -1000000000 && !hex)
 			printf(" ");
 		printf(format, *(array + i));
@@ -74,6 +90,10 @@ void dumpInts(int *array, int count, int hex){
 	printf("\n");
 }
 
+/*
+ * insertInOrder inserts insert in correct location of array,
+ * and shifts values over as needed.
+ */
 void insertInOrder(int *array, int count, int insert){
 	int i = 1;
 	while(i < count && *(array + i + 1) < insert){
