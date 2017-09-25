@@ -4,7 +4,7 @@
  *
  * structPacking casts between different struct pointers to see
  * what happens to the memory.
- * Returns 1 if any input errors are detected, else returns 0;
+ * Returns 1 if any input errors are detected, else returns 0
  */
 
 #include "proj04.h"
@@ -17,11 +17,18 @@ void printOneBar(Bar *fuBar);
 void printOneBaz(Baz *fooBaz);
 
 int main(){
+	//Allocate array of Foo structs and create various pointer casts.
 	Foo *array = malloc(4 * sizeof(Foo));
+	if (array == NULL) {
+		fprintf(stderr, "Could not allocate memory for array.\n");
+		return 1;
+	}
 	Bar *fuBar = (Bar*)array;
 	Baz *fooBaz = (Baz*)array;
 	unsigned char *arrayAsChars = (unsigned char*)array;
 	int *fooInt = (int*)array;
+
+	//Get fill byte and error check
 	int fill;
 	int rc = scanf("%d", &fill);
 	if(!(rc > 0)){
@@ -31,13 +38,19 @@ int main(){
 		fprintf(stderr, "The input was out of the [0, 255] range.\n");
 		return 1;
 	}
+
+	//Fill array with fill byte
 	for(int i = 0; i < 4 * sizeof(Foo); i++){
-		*(arrayAsChars + i) = fill;
+		*(arrayAsChars + i) = (unsigned char)fill;
 	}
+
+	//Fill array with Foos, error checking input
 	for(int i = 0; i < 4; i++){
 		if(fillOneFoo(array + i) != 0)
 			return 1;
 	}
+
+	//Print sizes, ints in array, bar array, and baz array
 	printf("sizeof(Foo)=%ld\n", sizeof(Foo));
 	printf("sizeof(Bar)=%ld\n", sizeof(Bar));
 	printf("sizeof(Baz)=%ld\n\n", sizeof(Baz));
@@ -47,9 +60,16 @@ int main(){
 	printf("\n");
 	for(int i = 0; i < 2; i++)
 		printOneBaz(fooBaz + i);
+
+	free(array);
 	return 0;
 }
 
+/*
+ * fillOneFoo
+ * Takes a pointer to a Foo struct and fills it with input from stdin.
+ * returns 0 on success, 1 on error.
+ */
 int fillOneFoo(Foo *fooPtr){
 	int rc = scanf("%d %d %d %c %c", &(fooPtr->arr[0]), 
 									 &(fooPtr->arr[1]),
@@ -63,6 +83,12 @@ int fillOneFoo(Foo *fooPtr){
 	return 0;
 }
 
+/*
+ * printInts
+ * Takes a pointer to an array of ints and the number of ints in the array as parameters,
+ * then prints the ints in hex format.
+ * No return value.
+ */
 void printInts(int* fooInts, int size){
 	for(int i = 0; i < size; i++){
 		printf("0x%08x", *(fooInts + i));
@@ -72,6 +98,11 @@ void printInts(int* fooInts, int size){
 	printf("\n\n");
 }
 
+/*
+ * printOneBar
+ * Takes a pointer to a Bar struct as a parameter and prints the values contained by
+ * the Bar. No return value.
+ */
 void printOneBar(Bar *fuBar){
 	printf("Bar:  ");
 	printf("x: 0x%08x=%d  ", fuBar->x, fuBar->x);
@@ -81,6 +112,11 @@ void printOneBar(Bar *fuBar){
 	printf("c2: 0x%02x\n", fuBar->c2);
 }
 
+/*
+ * printOneBaz
+ * Takes a pointer to a Baz struct as a parameter and prints the values contained by
+ * the Baz. No return value.
+ */
 void printOneBaz(Baz *fooBaz){
 	printf("Baz:  ");
 	printf("x: 0x%08x=%d  ", fooBaz->x, fooBaz->x);
