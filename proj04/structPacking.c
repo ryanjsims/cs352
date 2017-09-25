@@ -1,3 +1,10 @@
+/* structPacking.c
+ * Programmer: Ryan Sims
+ * Date: 9/25/2017
+ *
+ * 
+ */
+
 #include "proj04.h"
 #include <stdio.h>
 #include <stdlib.h>
