@@ -4,7 +4,7 @@
 
 void dumpNext(char *filename, FILE *fp, unsigned char c);
 void printChar(unsigned char c);
-void compareFiles(char **names, FILE **ptrs);
+int compareFiles(char **names, FILE **ptrs);
 
 int main(int argc, char** argv){
 	if(argc != 3){
@@ -24,13 +24,13 @@ int main(int argc, char** argv){
 		fprintf(stderr, "Unable to open file %s.\n", *(argv + 2));
 		return 1;
 	}
-	compareFiles(argv + 1, inputFiles);
+	int rc = compareFiles(argv + 1, inputFiles);
 	fclose(*inputFiles);
 	fclose(*(inputFiles + 1));
-	return 0;
+	return rc;
 }
 
-void compareFiles(char **names, FILE **ptrs){
+int compareFiles(char **names, FILE **ptrs){
 	int readCharA, readCharB;
 	int byteCount = 0;
 	readCharA = fgetc(*ptrs);
@@ -40,7 +40,7 @@ void compareFiles(char **names, FILE **ptrs){
 		readCharB = fgetc(*(ptrs+1));
 		byteCount++;
 	}
-	if(readCharA == EOF || readCharB == EOF){
+	if((readCharA == EOF || readCharB == EOF) && readCharA != readCharB){
 		switch(readCharA){
 			case EOF:
 				printf("The file '%s' was shorter than '%s'.\n", *names, *(names + 1));
@@ -51,13 +51,16 @@ void compareFiles(char **names, FILE **ptrs){
 				dumpNext(*names, *ptrs, (unsigned char)readCharA);
 				break;
 		}
+		return 1;
 	} else if(readCharA != readCharB) {
 		printf("Difference found at byte %d.\n", byteCount);
 		dumpNext(*names, *ptrs, (unsigned char)readCharA);
 		dumpNext(*(names + 1), *(ptrs + 1), (unsigned char)readCharB);
+		return 1;
 	} else {
 		//Hooray, the files match, congratulations, you won a car and 5 million dollarydoos!
 		printf("No differences found.\n");
+		return 0;
 	}
 }
 
