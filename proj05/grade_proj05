@@ -84,7 +84,7 @@ do
   echo "| recently-built file...                                 |"
   echo "+--------------------------------------------------------+"
 
-  if [[ $(make $PROG) != "make: '$PROG' is up to date." ]]
+  if [[ $(make $PROG) != "make: \`$PROG' is up to date." ]]
   then
     echo "ERROR: $PROG: The Makefile not will rebuild recently-built executables.  Fix the dependency/rule relationships.  (This script will attempt to rebuild the executable by hand, so that the testcases can still run.)" 1>&2
 

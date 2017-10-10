@@ -1,9 +1,36 @@
+/*
+ * File: rollingStrings.c
+ * Author: Ryan Sims
+ * Purpose: rollingStrings creates and fills a buffer of strings with strings read
+ * from files given in command line arguments.
+ */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+/*
+ * readOneStr(fp, err) -- returns a single string (or NULL if error occurs) 
+ * read from fp. If an error occurs, prints error message to stderr and sets
+ * the value at err equal to 1. The string is malloc'ed by readOneStr, and
+ * must be freed when it is no longer used.
+ * Assumes that fp and err are not NULL.
+ */
 char *readOneStr(FILE *fp, int *err);
+
+/*
+ * insertInOrder(toInsert, strings) -- inserts the string toInsert into the
+ * buffer strings in the correct order determined by strcmp.
+ * Assumes that strings is already sorted, that toInsert and strings are not NULL,
+ * and that the length of strings is 16.
+ */
 void insertInOrder(char *toInsert, char **strings);
+
+/*
+ * printStrings(buffer) -- prints the strings in buffer to the screen.
+ * Assumes that buffer is 16 strings long.
+ */
 void printStrings(char **buffer);
 
 int main(int argc, char *argv[]){
@@ -42,6 +69,13 @@ int main(int argc, char *argv[]){
 	return error;
 }
 
+/*
+ * readOneStr(fp, err) -- returns a single string (or NULL if error occurs)
+ * read from fp. If an error occurs, prints error message to stderr and sets
+ * the value at err equal to 1. The string is malloc'ed by readOneStr, and
+ * must be freed when it is no longer used.
+ * Assumes that fp and err are not NULL.
+ */
 char *readOneStr(FILE *fp, int *err){
 	int size, rc;
 	do{
@@ -80,6 +114,12 @@ char *readOneStr(FILE *fp, int *err){
 	return string;
 }
 
+/*
+* insertInOrder(toInsert, strings) -- inserts the string toInsert into the
+* buffer strings in the correct order determined by strcmp.
+* Assumes that strings is already sorted, that toInsert and strings are not NULL,
+* and that the length of strings is 16.
+*/
 void insertInOrder(char *toInsert, char **buffer){
 	if(buffer[14] != NULL){
 		free(buffer[1]);
@@ -106,6 +146,10 @@ void insertInOrder(char *toInsert, char **buffer){
 	}
 }
 
+/*
+ * printStrings(buffer) -- prints the strings in buffer to the screen.
+ * Assumes that buffer is 16 strings long.
+ */
 void printStrings(char **buffer){
 	printf("Current strings:\n");
 	for(int i = 0; i < 16; i++){
