@@ -1,0 +1,4 @@
+all:
+
+rollingStrings:	rollingStrings.c
+	gcc -g -Wall rollingStrings.c -o rollingStrings
