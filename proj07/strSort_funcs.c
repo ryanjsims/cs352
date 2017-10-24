@@ -19,7 +19,7 @@ StrList *readInput(FILE* inputFile){
 	int size = 0, capacity = 10;
 	do{
 		char *toAdd = readLongStr(inputFile);
-		if(strcmp(toAdd, "") == 0){
+		if(strcmp(toAdd, "") == 0 || strcmp(toAdd, "(null)") == 0){
 			free(toAdd);
 			continue;
 		}
@@ -124,6 +124,8 @@ char *readLongStr(FILE* in){
 
 	} 
 	str[size] = '\0';
+	if(strcmp(str, "") == 0)
+		strcpy(str, "(null)");
 	return str;
 }
 
@@ -144,6 +146,8 @@ void writeOutput(StrList* list, FILE* outputFile){
 }
 
 void freeList(StrList* list){
+	if(list == NULL)
+		return;
 	StrList *prev = list;
 	StrList *curr = list->next;
 	while(prev != NULL){

@@ -117,6 +117,8 @@ void writeOutput(IntList* list, FILE* outputFile){
 }
 
 void freeList(IntList* list){
+	if(list == NULL)
+		return;
 	IntList *prev = list;
 	IntList *curr = list->next;
 	while(prev != NULL){
