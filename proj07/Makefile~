@@ -1,5 +1,0 @@
-intSort:	intSort_main.c intSort_funcs.c proj07_intList.h
-	gcc -g -Wall intSort_main.c proj07_intList.h intSort_funcs.c -o intSort
-
-strSort:	strSort_main.c strSort_funcs.c porj07_intList.h
-	gcc -g -Wall strSort_main.c proj07_strList.h strSort_funcs.c -o strSort
