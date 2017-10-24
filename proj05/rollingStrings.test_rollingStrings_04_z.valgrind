@@ -1,0 +1,5 @@
+--766:0:aspacem   -1: ANON 0038000000-00383d1fff 4005888 r-x-- SmFixed d=0x000 i=384840  o=0       (0) m=0 /usr/lib/valgrind/memcheck-amd64-linux
+--766:0:aspacem  Valgrind: FATAL: aspacem assertion failed:
+--766:0:aspacem    segment_is_sane
+--766:0:aspacem    at m_aspacemgr/aspacemgr-linux.c:1502 (add_segment)
+--766:0:aspacem  Exiting now.
