@@ -1,0 +1,314 @@
+#! /bin/bash
+
+
+
+ALL_PROGS="intSort strSort"
+TIME_LIMIT=10     # in seconds
+
+
+# confirm that all of the basic test elements are present.
+for PROG in $ALL_PROGS
+do
+  if [[ ! -f example_$PROG ]]
+  then
+    echo "ERROR: example_$PROG is missing from the current directory." 1>&2
+    exit 1
+  fi
+
+  if [[ $(ls -1 test_${PROG}_* 2>/dev/null) = "" ]]
+  then
+    echo "WARNING: Could not find any testcases for $PROG.  That program will receive a score of 0 from this script." 1>&2
+  fi
+
+#  if [[ ! -f $PROG.c ]]
+#  then
+#    echo "WARNING: $PROG.c is missing; that program will receive a score of 0 from this script." 1>&2
+#  fi
+done
+
+
+
+SCORE_SO_FAR=0
+
+
+
+# TEST THE MAKEFILE
+rm *.o $ALL_PROGS 2>/dev/null
+
+make -k $ALL_PROGS >make.out 2>make.err
+RC=$?
+
+
+# check for stderr, or nonzero return codes.  These are compile failures.
+if [[ -s make.err || $RC != 0 ]]
+then
+  COMPILE_PENALTY=1
+  echo "ERROR: One of the programs did not compile perfectly.  Either warnings or errors were produced, or else the exit status from gcc was nonzero."
+else
+  COMPILE_PENALTY=0
+  rm make.err
+fi
+
+
+# Did the makefile create all of the required programs?
+if ! ls -1 $ALL_PROGS &>/dev/null
+then
+  MAKEFILE_SCORE=0
+  echo "ERROR: THe Makefile did not correctly build all of the required programs." 1>&2
+
+# Did the makefile use the proper gcc arguments?
+elif [[ $(grep     gcc  make.out) = "" ||
+        $(grep -E "\-g" make.out) = "" ]]
+then
+  MAKEFILE_SCORE=0
+  echo "ERROR: When 'make' was building the executable, some of the required arguments were missing." 1>&2
+
+# final check: does it unnecessarily rebuild?
+else
+  # set a default value, and change it if we find a problem.
+  MAKEFILE_SCORE=5
+
+  for PROG in $ALL_PROGS
+  do
+    if [[ $(make $PROG) != "make: \`$PROG' is up to date." ]]
+    then
+      MAKEFILE_SCORE=0
+      echo "ERROR: The Makefile unnecessarily rebuilds the program $PROG" 1>&2
+    fi
+  done
+
+  if [[ $MAKEFILE_SCORE = 5 ]]
+  then
+    rm make.out
+  fi
+fi
+
+
+
+echo "+-----------------"
+echo "| MAKEFILE SCORE: $MAKEFILE_SCORE / 5"
+echo "+-----------------"
+
+
+
+# NOW A BIG LOOP
+#
+# Each iteration of this loop tests one of the required programs; it goes
+# through all of the testcases for that program, and runs each one in turn.
+
+for PROG in $ALL_PROGS
+do
+  echo "------------- BEGIN TESTING OF ${PROG}.c -------------"
+
+  echo "+--------------------------------------------------------"
+  echo "| Beginning regular testcases for ${PROG}.  This will include:"
+  echo "|   - stdout check                                       "
+  echo "|   - stderr/rc check                                    "
+  echo "|   - valgrind check                                     "
+  echo "+--------------------------------------------------------"
+
+  ATTEMPT=0
+  PASS=0
+
+  for TESTCASE in $(ls -1 test_${PROG}_*)
+  do
+    echo "    *** testcase: $TESTCASE"
+
+    # in this script, each attempt is worth 4 points, since we split the
+    # points that can be earned into quarters (and bash doesn't handle floats)
+    # We set this very *early*, so that we can simply 'continue' out, any
+    # place that we find a failure.  It reduces nesting depth.
+    ATTEMPT=$(( ATTEMPT+4 ))
+
+
+    # this project uses an unusual input format.
+#    # extract the testcase type from the name extension
+#    EXTENSION=$(echo $TESTCASE | rev | cut -f1  -d'.' | rev)
+#    TESTCASE=$( echo $TESTCASE | rev | cut -f2- -d'.' | rev)
+#
+#    # based on the testcase name, we set the input values.  By doing it this
+#    # way, we can unify the testcase-running code below.
+#    if [[ $EXTENSION = "stdin" ]]
+#    then
+#      STDIN=$TESTCASE.stdin
+#      ARGS=""
+#    elif [[ $EXTENSION = "args" ]]
+#    then
+#      STDIN=/dev/null
+#      ARGS=$(cat $TESTCASE.args)
+#    else
+#      echo "ERROR: $PROG: Testcase '$TESTCASE' could not be run, because the grading script didn't recognize the testcase extension.  Please name the testcase \*.stdin or \*.args." 1>&2
+#      continue
+#    fi
+
+
+    # for clarity below, use variables for the 5 filenames.
+    eo=$PROG.$TESTCASE.example.stdout
+    ee=$PROG.$TESTCASE.example.stderr
+    so=$PROG.$TESTCASE.student.stdout
+    se=$PROG.$TESTCASE.student.stderr
+    vg=$PROG.$TESTCASE.valgrind
+
+    # clean up old artifacts
+    rm $eo $ee $so $se 2>/dev/null
+
+
+    # run the example executable - and then the student executable, to compare
+#    cat $STDIN | timeout $TIME_LIMIT  ./example_$PROG $ARGS >$eo 2>$ee
+    timeout $TIME_LIMIT  ./example_$PROG $TESTCASE $PROG.$TESTCASE.example_sorted >$eo 2>$ee
+    EXAMPLE_RC=$?
+
+#    cat $STDIN | timeout $TIME_LIMIT          ./$PROG $ARGS >$so 2>$se
+    timeout $TIME_LIMIT          ./$PROG $TESTCASE $PROG.$TESTCASE.student_sorted >$so 2>$se
+    STUDENT_RC=$?
+
+
+    # Diagnose student timeouts with a message that makes it clear.  Otherwise
+    # I get lots of Piazza posts about it.  :(
+    if [[ $STUDENT_RC = 124 ]]
+    then
+      echo "ERROR: $PROG: Testcase '$TESTCASE' failed: Command timed out after $TIME_LIMIT seconds." 1>&2
+      continue
+    fi
+
+
+    # 50% of the testcase score: compare stdout
+    # SPECIAL FOR THIS PROJECT: compare sorted as well
+    if [[ $(diff $eo $so) ]]
+    then
+      echo "ERROR: $PROG: Testcase '$TESTCASE' failed: stdout mismatch." 1>&2
+      continue
+    fi
+
+    if [[ $(diff $PROG.$TESTCASE.example_sorted $PROG.$TESTCASE.student_sorted) ]]
+    then
+      echo "ERROR: $PROG: Testcase '$TESTCASE' failed: sorted file mismatch." 1>&2
+      continue
+    fi
+
+    # any code which gets here gets half credit for the testcase.
+    PASS=$(( PASS+2 ))
+    rm $eo $so
+    rm $PROG.$TESTCASE.example_sorted $PROG.$TESTCASE.student_sorted
+
+
+    # UPDATE: Don't use timeout on the valgrind run, since valgrind makes
+    #         things very slow!  We've moved this down below the stdout
+    #         check, so that this doesn't run until the program has *PASSED*
+    #         the timeout above.
+
+    # Now check for valgrind errors.
+#    cat $STDIN | timeout $TIME_LIMIT valgrind --leak-check=full ./$PROG $ARGS >/dev/null 2>$vg
+    valgrind --leak-check=full ./$PROG $TESTCASE /dev/null >/dev/null 2>$vg
+
+
+    # 25% of the testcase score: compare stderr (loosely) and return codes
+    if [[ $STUDENT_RC != $EXAMPLE_RC ]]
+    then
+      echo "ERROR: $PROG: Testcase '$TESTCASE' partial failure: exit status mismatch.  example: $EXAMPLE_RC student: $STUDENT_RC" 1>&2
+    else
+      if [[ -s $ee && ! -s $se ]]
+      then
+        echo "ERROR: $PROG: Testcase '$TESTCASE' partial failure: the example executable printed something to stderr, but the student testcase did not." 1>&2
+      else
+        if [[ ! -s $ee &&   -s $se ]]
+        then
+          echo "ERROR: $PROG: Testcase '$TESTCASE' partial failure: the example executable did *NOT* print anything to stderr, but the student testcase did." 1>&2
+        else
+          # passed all tests for this 25% of the score.  Note that this has
+          # to be buried inside many layers of if() because the errors above
+          # should *NOT* terminate testcase processing; we still have to
+          # check valgrind.
+          PASS=$(( PASS+1 ))
+          rm $ee $se
+        fi
+      fi
+    fi
+
+
+    # 25% of the testcase score: valgrind
+    if [[ $(grep "ERROR SUMMARY" $vg) = "" ]]
+    then
+      echo "ERROR: $PROG: Testcase '$TESTCASE' failed: The output from valgrind does not appear to include the error summary, no valgrind grade can be assigned." 1>&2
+
+    elif [[ $(grep "ERROR SUMMARY" $vg | grep -v "ERROR SUMMARY: 0") != "" ]]
+    then
+      echo "ERROR: $PROG: Testcase '$TESTCASE' failed: Valgrind errors occurred." 1>&2
+
+    else
+      PASS=$(( PASS+1 ))
+      rm $vg
+    fi
+
+#    echo "PASS/ATTEMPT : $PASS/$ATTEMPT"
+  done
+
+  if [[ $PROG = "intSort" ]]
+  then
+    POSSIBLE=30
+  else
+    POSSIBLE=35
+  fi
+
+  if [[ $ATTEMPT -eq 0 ]]
+  then
+    echo "WARNING: The program '$PROG' did not have any testcases, you earn 0 points for this program." 1>&2
+    THIS_SCORE=0
+  else
+    # total up the score for this program
+    THIS_SCORE=$(( POSSIBLE*PASS / ATTEMPT ))
+
+    if [[ $COMPILE_PENALTY = 1 ]]
+    then
+      THIS_SCORE=$(( THIS_SCORE / 2 ))
+    fi
+  fi
+
+  echo "+--------------------------------------------------------+"
+  echo "| Regular testcase testing has completed.                |"
+  echo "+--------------------------------------------------------+"
+  echo "SCORE FOR '$PROG': ${THIS_SCORE} out of ${POSSIBLE} points"
+
+
+  # perform the gcov testing 
+#  echo "+--------------------------------------------------------+"
+#  echo "| Begin gcov testing.  You may see messages about        |"
+#  echo "| certain testcase errors - however, we try to catch as  |"
+#  echo "| much of the output as possible, and discard it.        |"
+#  echo "+--------------------------------------------------------+"
+#  rm $PROG.gcda   # gcov logging file
+#  ls -1d test_${PROG}* | while read line
+#  do
+#    cd $line || continue
+#    timeout $TIME_LIMIT ../$PROG $(cat CMDLINE) >/dev/null 2>&1
+#    cd ..
+#  done
+#
+#  echo "+--------------------------------------------------------+"
+#  echo "| The gcov testcases have finished.  Running gcov to     |"
+#  echo "| collect the information...                             |"
+#  echo "+--------------------------------------------------------+"
+#  gcov $PROG 2>&1
+#
+#  echo "+--------------------------------------------------------+"
+#  echo "| The gcov output is below.  Please inspect it for       |"
+#  echo "| uncovered lines, which will be marked with #####       |"
+#  echo "+--------------------------------------------------------+"
+#  cat  $PROG.c.gcov 2>&1
+
+  echo "------------- END TESTING OF ${PROG}.c -------------"
+
+
+#  cd ..
+
+  SCORE_SO_FAR=$(( SCORE_SO_FAR + THIS_SCORE ))
+done
+
+
+echo "----------------------------"
+echo "     Makefile: $MAKEFILE_SCORE / 5"
+echo "     Testcase: $SCORE_SO_FAR / 65"
+echo "AUTOMATED SCORE: $(( MAKEFILE_SCORE + SCORE_SO_FAR ))"
+echo "----------------------------"
+
+
