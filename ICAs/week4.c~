@@ -1,0 +1,11 @@
+#include <stdio.h>
+
+int main(){
+	int x = 0;
+	int *y = &x;
+	*y = 2;
+	for(int i = -3; i < 4; i++){
+		printf("%d\n", y[i]);
+	}
+	return 0;
+}

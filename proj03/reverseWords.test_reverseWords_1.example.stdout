@@ -1,0 +1,15 @@
+fdsa
+	DEBUG: buf1='asdf' buf2='BUF2' buf3='BUF3'
+lkj
+	DEBUG: buf1='jkl' buf2='BUF2' buf3='BUF3'
+raboof
+	DEBUG: buf1='foobar' buf2='BUF2' buf3='BUF3'
+oof
+	DEBUG: buf1='foo' buf2='BUF2' buf3='BUF3'
+rab
+	DEBUG: buf1='bar' buf2='BUF2' buf3='BUF3'
+ZYXWVUTSRQPONMLKJIHGFEDCBAzyxwvutsrqponmlkjihgfedcba
+	DEBUG: buf1='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' buf2='GHIJKLMNOPQRSTUVWXYZ' buf3='BUF3'
+	OOPS: The word to reverse was too long!  len=52
+ytrewq
+	DEBUG: buf1='qwerty' buf2='GHIJKLMNOPQRSTUVWXYZ' buf3='BUF3'

@@ -1,0 +1,24 @@
+inspect(): Test passed on one object, val=10 : prev=<null> next=<null>
+inspect(): Test passed on one object, val=20 : prev=<null> next=<null>
+inspect(): Test passed on one object, val=0 : prev=<null> next=<null>
+inspect(): Test passed on one object, val=5 : prev=<null> next=<null>
+Chaining the objects together...
+inspect(): Test passed on one object, val=20 : prev=<null> next->val=10
+inspect(): Test passed on one object, val=10 : prev->val=20 next->val=0
+inspect(): Test passed on one object, val=0 : prev->val=10 next->val=5
+inspect(): Test passed on one object, val=5 : prev->val=0 next=<null>
+Removing 20 from the list...
+inspect(): Test passed on one object, val=20 : prev=<null> next=<null>
+inspect(): Test passed on one object, val=10 : prev=<null> next->val=0
+inspect(): Test passed on one object, val=0 : prev->val=10 next->val=5
+inspect(): Test passed on one object, val=5 : prev->val=0 next=<null>
+Removing 5 from the list...
+inspect(): Test passed on one object, val=20 : prev=<null> next=<null>
+inspect(): Test passed on one object, val=10 : prev=<null> next->val=0
+inspect(): Test passed on one object, val=0 : prev->val=10 next=<null>
+inspect(): Test passed on one object, val=5 : prev=<null> next=<null>
+Removing 0 from the list...
+inspect(): Test passed on one object, val=20 : prev=<null> next=<null>
+inspect(): Test passed on one object, val=10 : prev=<null> next=<null>
+inspect(): Test passed on one object, val=0 : prev=<null> next=<null>
+inspect(): Test passed on one object, val=5 : prev=<null> next=<null>

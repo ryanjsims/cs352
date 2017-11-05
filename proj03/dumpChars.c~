@@ -1,0 +1,19 @@
+#include <stdio.h>
+
+int main(){
+	char input;
+	int rc = scanf("%c", &input);
+	for(int i = 1; rc > 0; i++){
+		printf("%02x", input);
+		if(i % 16 == 0)
+			printf("\n");
+		else {
+			printf(" ");
+			if(i % 4 == 0)
+				printf(" ");
+		}
+		rc = scanf("%c", &input);
+	}
+	printf("\n");
+	return 0;
+}
