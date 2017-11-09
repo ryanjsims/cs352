@@ -1,6 +1,12 @@
 #! /bin/bash
 
 
+# NOTE: I added LC_ALL=C because in some other locales, 'sort' does very
+#       strange things!  See:
+#   https://www.gnu.org/software/coreutils/faq/coreutils-faq.html#Sort-does-not-sort-in-normal-order_0021
+export LC_ALL=C
+
+
 TIME_LIMIT=10     # in seconds
 
 

@@ -218,8 +218,8 @@ EncNode_Str *encList_Str__index(EncList_Str*, int index);
 //
 // The position for the split is given by the 'index;' the index is the first
 // node that will be *MOVED* to the other list.  So if index=0, then the
-// *ENTIRE* list will be moved into the new object; if index=4, then 4 will
-// remain in the current list, and the rest will be moved.
+// *ENTIRE* list will be moved into the new object; if index=4, then 3 will
+// remain in the current list, and all of the nodes after it will be moved.
 //
 // Basically, the index parameter works like the index() method above, with
 // one exception: the value count() is *LEGAL* in this function.  (This simply

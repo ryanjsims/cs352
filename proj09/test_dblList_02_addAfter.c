@@ -85,11 +85,13 @@ int main()
 
 void trashMallocBuffers()
 {
-	for (int size = sizeof(DblList_Int)/4;
+	int size;
+	for (size = sizeof(DblList_Int)/4;
 	     size    <= sizeof(DblList_Int)*8;
 	     size *= 2)
 	{
-		for (int i=0; i<1024; i++)
+		int i;
+		for (i=0; i<1024; i++)
 		{
 			char *buf = malloc(size);
 			if (buf == NULL)
@@ -98,7 +100,8 @@ void trashMallocBuffers()
 				continue;
 			}
 
-			for (int pos=0; pos<size; pos++)
+			int pos;
+			for (pos=0; pos<size; pos++)
 				buf[pos] = rand() % 256;
 
 			free(buf);

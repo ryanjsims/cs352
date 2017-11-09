@@ -8,16 +8,8 @@ all: testcases mergeSort
 
 testcases: test_dblList_01_allocFree
 testcases: test_dblList_02_addAfter
-testcases: test_dblList_03_swapWithNext
 
-test_dblList_01_allocFree: test_dblList_01_allocFree.c dblListInt.h dblListInt.o
-	$(CC) $(CFLAGS) $^ -o $@
 
-test_dblList_02_addAfter: test_dblList_02_addAfter.c dblListInt.h dblListInt.o
-	$(CC) $(CFLAGS) $^ -o $@
-
-test_dblList_03_swapWithNext: test_dblList_03.c dblListInt.h dblListInt.o
-	$(CC) $(CFLAGS) $^ -o $@
 
 # see http://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html 
 #
@@ -33,12 +25,11 @@ mergeSort: mergeSort.c encapsulatedListStr.h encapsulatedListStr.o
 # relationships, but which do not actually add any new build rules.
 
 dblListInt.o: dblListInt.c dblListInt.h
-	$(CC) $(CFLAGS) -c dblListInt.c -o $@
 encapsulatedListStr.o: encapsulatedListStr.c encapsulatedListStr.h
-	$(CC) $(CFLAGS) -c encapsulatedListStr.c -o $@
 
 
 
 clean:
 	-rm *.o test_dblList_01_allocFree test_dblList_02_addAfter mergeSort
+
 
