@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <malloc.h>
-
+#include <time.h>
 #include "encapsulatedListStr.h"
 
 

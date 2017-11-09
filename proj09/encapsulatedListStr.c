@@ -8,14 +8,14 @@
 struct EncapsulatedList_Str{
 	EncNode_Str *head, *tail;
 	int length;	
-}
+};
 
 
 struct EncapsulatedList_Str_Node{
 	char *val;
 	struct EncapsulatedList_Str_Node *next, *prev;
 	int dup;
-}
+};
 
 
 
@@ -348,7 +348,7 @@ EncNode_Str *encList_Str__index(EncList_Str* this, int index){
 		fprintf(stderr, "List was NULL!\n");
 		return NULL;
 	}
-	if(index >= this->count || index < 0){
+	if(index >= this->length || index < 0){
 		fprintf(stderr, "Index error\n");
 		return NULL;
 	}
