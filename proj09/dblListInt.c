@@ -1,3 +1,11 @@
+/*
+ * dblListInt.c
+ * Programmer: Ryan Sims 
+ * Purpose: dblListInt implements a doubly linked list of integers, using
+ * a C struct to create a pseudo-object with methods defined to operate
+ * with a pointer to the struct.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "dblListInt.h"

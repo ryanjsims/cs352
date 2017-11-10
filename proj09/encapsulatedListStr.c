@@ -1,16 +1,36 @@
+/*
+ * encapsulatedListStr.c
+ * Programmer: Ryan Sims
+ * Purpose: encapsulatedListStr implements a doubly linked list of 
+ * strings, using two C structs to create a pseudo-object with 
+ * methods defined to operate with pointers to the structs.
+ * The contents of the structs are 'private' in that they
+ * are only defined in this file.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "encapsulatedListStr.h"
 
 
-
+/*EncapsulatedList_Str:
+	A list "Object."
+	Contains references to the head and tail nodes of the list.
+	Also contains an int that stores the length of the
+	list, to let count() run in O(1) time.
+*/
 struct EncapsulatedList_Str{
 	EncNode_Str *head, *tail;
 	int length;	
 };
 
-
+/*EncapsulatedList_Str_Node:
+	A node "Object."
+	Contains references to the stored string and the next and previous nodes
+	sequence, as well as a "boolean" int dup that stores whether the string
+	has been copied or not.
+*/
 struct EncapsulatedList_Str_Node{
 	char *val;
 	struct EncapsulatedList_Str_Node *next, *prev;
