@@ -1,0 +1,23 @@
+groupB:
+   asdf=01234
+   jkl=56789
+   zxcv=02468
+
+groupA:
+   xxx=one two three
+
+groupB:
+   ccc=meal
+   aaa=deal
+   bbb=beal
+
+groupA:
+   yyy=four five six
+   zzz=
+
+groupB:
+   foo=bar
+   baz=fred
+
+anEmptyGroup:
+

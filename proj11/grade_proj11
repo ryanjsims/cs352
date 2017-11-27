@@ -1,0 +1,247 @@
+#! /bin/bash
+
+
+# NOTE: I added LC_ALL=C because in some other locales, 'sort' does very
+#       strange things!  See:
+#   https://www.gnu.org/software/coreutils/faq/coreutils-faq.html#Sort-does-not-sort-in-normal-order_0021
+export LC_ALL=C
+
+
+TIME_LIMIT=10     # in seconds
+
+
+if [[ $(ls -1 test_* 2>/dev/null) == "" ]]
+then
+  echo "No files named test_\* were found.  The grading script cannot run." 1>&2
+  exit 1
+fi
+
+#if [[ $(ls -1 test_*.c 2>/dev/null) == "" ]]
+#then
+#  echo "No files named test_*.c were found.  The grading script cannot run." 1>&2
+#  exit 1
+#fi
+
+#if [[ $(ls -1 test_mergeSort_* 2>/dev/null) == "" ]]
+#then
+#  echo "No files named test_mergeSort_* were found.  The grading script cannot run." 1>&2
+#  exit 1
+#fi
+
+
+
+# run the Makefile to build everything.  We don't check the return codes, or
+# anything.  However, we'll remove the old executables before we build!
+
+rm parseConfigFile calculator 2>/dev/null
+
+echo "--------------------------------------------------"
+echo "| Running the makefile, once per program..."
+echo "--------------------------------------------------"
+make parseConfigFile 2>&1
+make calculator      2>&1
+echo
+
+
+SCORE_SO_FAR=0
+
+# run the compiled testcases.
+for PROG in parseConfigFile calculator
+do
+  ATTEMPTED=0
+  PASSED=0
+
+  if [[ ! -x example_$PROG ]]
+  then
+    echo "The example executable example_$PROG either does not exist, or is not executable.  THe program cannot be tested." 1>&2
+    echo
+    continue
+  fi
+
+  if [[ ! -x $PROG ]]
+  then
+    echo "It appears that the program '$PROG' was not build by your makefile.  No testing of this program can be performed." 1>&2
+    echo
+    continue
+  fi
+
+  if [[ $(ls -1 test_${PROG}_* 2>/dev/null) == "" ]]
+  then
+    echo "There are no testcases for $PROG.  Please create files named test_${PROG}_xxx." 1>&2
+    echo
+    continue
+  fi
+
+  for TESTCASE in test_${PROG}_*
+  do
+    echo "--------------------------------------------------"
+    echo "| Beginning testcase $TESTCASE..."
+    echo "--------------------------------------------------"
+
+    ATTEMPTED=$(( ATTEMPTED+4 ))
+
+#    if [[ ! -f $TESTCASE.out ]]
+#    then
+#      echo "The file $TESTCASE.out is not present, the testcase cannot be attempted."
+#      echo
+#      continue
+#    fi
+
+#    if [[ ! -s $TESTCASE.out ]]
+#    then
+#      echo "The file $TESTCASE.out is exists, but is empty.  The testcase cannot be attempted."
+#      echo
+#      continue
+#    fi
+
+#    if [[ ! -x $TESTCASE ]]
+#    then
+#      echo "The file $TESTCASE either doesn't exist, or is not executable.  This either means that the Makefile did not attempt to build it, or else that the build failed.  This testcase cannot be attempted."
+#      echo
+#      continue
+#    fi
+
+
+    # run the testcase.  Capture stdout and stderr; the output must be correct,
+    # and the stderr empty.  Then we'll do valgrind in a second pass.
+
+    # these are the 5 log files we'll create
+    eo=logs.$TESTCASE.example.stdout
+    ee=logs.$TESTCASE.example.stderr
+    so=logs.$TESTCASE.student.stdout
+    se=logs.$TESTCASE.student.stderr
+    vg=logs.$TESTCASE.valgrind
+
+    # clean up the old files
+    rm $eo $ee $so $se $vg 2>/dev/null
+
+
+    ./example_$PROG < $TESTCASE 1>$eo 2>$ee
+    EXAMPLE_RC=$?
+
+
+    # measure the size of the .out file; we'll only allow that many lines.  And
+    # we'll chop every line at no more than 1000 characters.  Oh, and we'll
+    # limit stderr to 10 lines, 1000 characters
+    LINE_LIMIT=$(wc -l $eo | cut -f1 -d' ')
+    LINE_LIMIT=$(( LINE_LIMIT*2 ))
+
+
+    # because of the cat command below, I don't have access to the RC from the
+    # previous command.  So we'll run it a second time, and check the RC on that.
+    # It's a hack, but it's the best I've found so far.
+    timeout -k $TIME_LIMIT $TIME_LIMIT ./$PROG <$TESTCASE 1>/dev/null 2>&1
+    STUDENT_RC=$?
+
+    # Diagnose student timeouts with a message that makes it clear.  Otherwise
+    # I get lots of Piazza posts about it.  :(
+    if [[ $STUDENT_RC = 124 ]]
+    then
+      echo "TESTCASE FAILED: timeout!"
+      continue
+    fi
+
+
+    # the 'cat' at the end solves a subtle race condition: without it, the main
+    # command can terminate while the process substitutions are still running;
+    # this can cause mismatches later.  But if we add a piped 'cat' (even though
+    # there will be nothing to print), it causes an implicit wait.  This is
+    # because the stdin that 'cat' is reading from is the shared stdout, from
+    # all of the processes before; this only hits EOF when the last process
+    # dies - thus, it functions as a global 'wait' condition
+    #
+    # SINGLE PROJECT CHANGE:
+    #   Don't do the 'head' commands, since the 'calculator' program dies
+    #   without a trailing newline.
+    timeout -k $TIME_LIMIT $TIME_LIMIT ./$PROG <$TESTCASE      \
+                  1>$so 2>$se
+               #  1> >(head -n $LINE_LIMIT | cut -c-1000 > $so) \
+               #  2> >(head -n 10          | cut -c-1000 > $se) | cat
+
+
+    # compare stdout
+    if [[ $(diff $eo $so) == "" ]]
+    then
+      echo "stdout compare OK."
+      PASSED=$(( PASSED+2 ))
+      rm $eo $so
+    else
+      echo "TESTCASE FAILED: stdout miscompare!"
+      echo "--- diff output: ---"
+      diff $eo $so
+      continue
+    fi
+
+    # if we get here, then stdout matched.  Did the return codes match?
+    if [[ $STUDENT_RC != $EXAMPLE_RC ]]
+    then
+      echo "TESTCASE ERROR: rc mismatch.  Example: $EXAMPLE_RC Student: $STUDENT_RC"
+
+    elif [[ -s $ee && ! -s $se ]]
+    then
+      echo "TESTCASE ERROR: stderr mismatch.  The example printed a message to stderr, but the student program did not."
+
+    elif [[ ! -s $ee && -s $se ]]
+    then
+      echo "TESTCASE ERROR: stderr mismatch.  The example did not print anything to stderr, but the student program did."
+
+    else
+      echo "stderr/rc check OK"
+      PASSED=$(( PASSED+1 ))
+      rm $ee $se
+    fi
+
+
+    # do the valgrind test.  We do *NOT* use a timeout here, because valgrind
+    # make the program a lot slower.  But that's safe, because it didn't
+    # time out above, when we tried it the first time.
+    valgrind --leak-check=full ./$PROG <$TESTCASE >/dev/null 2>$vg
+    
+    # 25% of the testcase score: valgrind
+    if [[ $(grep "ERROR SUMMARY" $vg) = "" ]]
+    then
+      echo "TESTCASE ERROR: The output from valgrind does not appear to include the error summary, no valgrind grade can be assigned." 1>&2
+
+    elif [[ $(grep "ERROR SUMMARY" $vg | grep -v "ERROR SUMMARY: 0") != "" ]]
+    then
+      echo "TESTCASE ERROR: Valgrind errors occurred." 1>&2
+
+    else
+      echo "Valgrind check OK"
+      PASSED=$(( PASSED+1 ))
+      rm $vg
+    fi
+
+    echo
+  done
+
+
+  # when we get here, we've run some testcases, for this program.  How much
+  # the group of testcases is worth depends on the program.
+  if [[ $PROG = parseConfigFile ]]
+  then
+    POSSIBLE=40
+  elif [[ $PROG = calculator ]]
+  then
+    POSSIBLE=10
+
+  else
+    echo "ERROR: I'm not sure that the program '$PROG' is worth for the testcases.  No value will be recorded!  PASSED=$PASSED, ATTEMPTED=$ATTEMPTED" 1>&2
+    continue
+  fi
+
+  TESTS_SCORE=$(( PASSED*POSSIBLE/ATTEMPTED ))
+  echo "----------------------------"
+  echo "$PROG TESTCASES SCORE: $TESTS_SCORE / $POSSIBLE"
+  echo "----------------------------"
+  echo 
+
+  SCORE_SO_FAR=$(( SCORE_SO_FAR + TESTS_SCORE ))
+done
+
+
+
+echo "----------------------------"
+echo "AUTOMATED SCORE: $SCORE_SO_FAR / 60"
+echo "----------------------------"
+
