@@ -23,37 +23,45 @@ int isGroupLine(char* line, size_t len);
 char* getName(char* line, size_t len);
 char* getVal(char* line, size_t len);
 
+int checkFormatting(char* line);
+
+int combineDuplicates(Group** groups, size_t len);
 void printGroups(Group** groups, size_t len);
 void printVar(Var* var);
+void freeGroup(Group* group);
+void freeAll(Group** groups, size_t len);
 
 int main(int argc, char** argv){
-	printf("%d\n", isGroupLine("Testing:\n", 9));
-	printf("%d\n", isGroupLine("Testing:\n", 10));
-	/*size_t groupsLen = 0;
+	size_t groupsLen = 0;
 	Group** groups = parseInput(stdin, &groupsLen);
 	if(groups == NULL)
 		return 1;
-
-	qsort(groups, groupsLen, sizeof(Group), compGroup);
+	printGroups(groups, groupsLen);
+	printf("----- SORTING THE GROUPS -----\n");
+	qsort(groups, groupsLen, sizeof(Group*), compGroup);
+	printf("----- JOINING DUPLICATE GROUP NAMES -----\n");
+	groupsLen = combineDuplicates(groups, groupsLen);
+	printf("----- SORTING THE VARIABLES INSIDE EACH GROUP -----\n");
 	for(size_t i = 0; i < groupsLen; i++){
 		Var** vars = groups[i]->variables;
 		size_t varLen = groups[i]->len;
-		qsort(vars, varLen, sizeof(Var), compVar);
+		qsort(vars, varLen, sizeof(Var*), compVar);
 	}
-	
+	printf("----- FINAL VERSION -----\n");
 	printGroups(groups, groupsLen);
-	return 0;*/
+	freeAll(groups, groupsLen);
+	return 0;
 }
 
 int compVar(const void* var1, const void* var2){
-	const Var* first = (const Var*)var1;
-	const Var* second = (const Var*)var2;
+	const Var* first = *((const Var**)var1);
+	const Var* second = *((const Var**)var2);
 	return strcmp(first->name, second->name);
 }
 
 int compGroup(const void* group1, const void* group2){
-	const Group* first = (const Group*)group1;
-	const Group* second = (const Group*)group2;
+	const Group* first = *((const Group**)group1);
+	const Group* second = *((const Group**)group2);
 	return strcmp(first->name, second->name);
 }
 
@@ -64,9 +72,9 @@ Group** parseInput(FILE* input, size_t* len){
 	while(1){
 		int rc = getline(&line, &linelen, input);
 		if(rc == EOF){
-			return toReturn;
+			break;
 		}
-		if(linelen <= 1)
+		if(rc <= 1)
 			continue;
 		if(toReturn == NULL){
 			toReturn = malloc(capacity * sizeof(Group*));
@@ -79,13 +87,23 @@ Group** parseInput(FILE* input, size_t* len){
 			perror("Failed to allocate memory.");
 			return NULL;
 		}
-		if(isGroupLine(line, linelen)){
+		int fmt = checkFormatting(line);
+		if(fmt == 1){
+			line[strlen(line) - 1] = '\0';
+			fprintf(stderr, "ERROR: The first character in the line '%s' was not a letter!\n", line);
+			break;
+		} else if (fmt == 2){
+			line[strlen(line) - 1] = '\0';
+			fprintf(stderr, "ERROR: The line '%s' must separate its halves by '=' or ':'\n", line);
+			continue;
+		}
+		if(isGroupLine(line, rc)){
 			toReturn[groups] = malloc(sizeof(Group));
 			if(toReturn[groups] == NULL){
 				perror("Failed to allocate memory.");
 				return NULL;
 			}
-			toReturn[groups]->name = getName(line, linelen);
+			toReturn[groups]->name = getName(line, rc);
 			toReturn[groups]->len = 0;
 			toReturn[groups]->cap = 1;
 			toReturn[groups]->variables = malloc(sizeof(Var*)); 
@@ -95,16 +113,16 @@ Group** parseInput(FILE* input, size_t* len){
 			}
 			groups++;
 		} else if(groups == 0){
-			perror("Incorrectly formatted input, variable without group!");
-			return NULL;
+			line[strlen(line) - 1] = '\0';
+			fprintf(stderr, "ERROR: Variable before group in line \"%s\"\n", line);
 		} else {
 			Var* newVar = malloc(sizeof(Var));
 			if(newVar == NULL){
 				perror("Failed to allocate memory.");
 				return NULL;
 			}
-			newVar->name = getName(line, linelen);
-			newVar->val  = getVal(line, linelen);
+			newVar->name = getName(line, rc);
+			newVar->val  = getVal(line, rc);
 			Group* target = toReturn[groups-1];
 			if(target->len == target->cap){
 				target->variables = realloc(target->variables, target->cap * 2 * sizeof(Var*));
@@ -118,12 +136,13 @@ Group** parseInput(FILE* input, size_t* len){
 			target->len++;
 		}
 	}
+	*len = groups;
+	free(line);
+	return toReturn;
 }
 
 int isGroupLine(char* line, size_t len){
 	size_t pos = len - 1;
-	printf("%c\n", line[pos]);
-	printf("%c\n", line[pos - 1]);
 	while(isspace(line[pos]) || line[pos] == '\0')
 		pos--;
 	return line[pos] == ':';
@@ -136,18 +155,84 @@ char* getName(char* line, size_t len){
 	start = pos;
 	while(isalpha(line[pos]))
 		pos++;
-	end = pos - 1;
+	end = pos;
 	return strndup(line + start, end - start);
 }
 char* getVal(char* line, size_t len){
-	size_t pos = len - 1, start, end;
+	size_t pos = 0, start;
+	while(line[pos] != '=')
+		pos++;
+	pos++;
 	while(isspace(line[pos]))
-		pos--;
-	end = pos;
-	while(isalpha(line[pos]))
-		pos--;
-	start = pos + 1;
-	return strndup(line + start, end - start);
+		pos++;
+	start = pos;
+	char* toReturn = strndup(line + start, len - start);
+	if(strcmp(toReturn, "") == 0 || toReturn[strlen(toReturn) - 1] != '\n'){
+		toReturn = realloc(toReturn, strlen(toReturn) + 2);
+		toReturn[strlen(toReturn) + 1] = '\0';
+		toReturn[strlen(toReturn)] = '\n';
+	}
+	return toReturn;
+}
+
+int checkFormatting(char* line){
+	int i = 0;
+	int len = strlen(line);
+	while(i < len && isspace(line[i]))
+		i++;
+	if(i < len && !isalpha(line[i]))
+		return 1;
+	while(i < len && (isalpha(line[i]) || isspace(line[i])))
+		i++;
+	if(i < len && line[i] != '=' && line[i] != ':')
+		return 2;
+	return 0;
+}
+
+int combineDuplicates(Group** groups, size_t len){
+	if(len <= 1)
+		return len;
+	int i = 0;
+	int uniq = 0;
+	while(i < len){
+		if(uniq != i && strcmp(groups[uniq]->name, groups[i]->name) == 0){
+			size_t newlen = groups[uniq]->len + groups[i]->len;
+			size_t currlen = groups[uniq]->len;
+			size_t duplen = groups[i]->len;
+
+			groups[uniq]->variables = realloc(groups[uniq]->variables, newlen * sizeof(Var*));
+			if(groups[uniq]->variables == NULL){
+				perror("Unable to allocate memory.");
+				return -1;
+			}
+			Var** dest = groups[uniq]->variables + currlen;
+			for(int j = 0; j < duplen; j++){
+				dest[j] = malloc(sizeof(Var));
+				if(dest[j] == NULL){
+					perror("Unable to allocate memory.");
+					return -1;
+				}
+				dest[j]->name = strdup(groups[i]->variables[j]->name);
+				dest[j]->val = strdup(groups[i]->variables[j]->val);
+				if(dest[j]->name == NULL || dest[j]->val == NULL){
+					perror("Unable to allocate memory.");
+					return -1;
+				}
+			}
+			//memcpy(dest, groups[i]->variables, duplen);
+
+			groups[uniq]->len = newlen;
+			groups[uniq]->cap = newlen;
+
+			freeGroup(groups[i]);
+		}
+		else if(uniq != i){
+			uniq++;
+			groups[uniq] = groups[i];
+		}
+		i++;
+	}
+	return uniq + 1;
 }
 
 void printGroups(Group** groups, size_t len){
@@ -159,5 +244,23 @@ void printGroups(Group** groups, size_t len){
 	}
 }
 void printVar(Var* var){
-	printf("\t%s = %s\n", var->name, var->val);
+	printf("    %s = %s", var->name, var->val);
+}
+
+void freeGroup(Group* group){
+	for(int i = 0; i < group->len; i++){
+		free(group->variables[i]->name);
+		free(group->variables[i]->val);
+		free(group->variables[i]);
+	}
+	free(group->variables);
+	free(group->name);
+	free(group);
+}
+
+void freeAll(Group** groups, size_t len){
+	for(int i = 0; i < len; i++){
+		freeGroup(groups[i]);
+	}
+	free(groups);
 }

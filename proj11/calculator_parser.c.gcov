@@ -1,0 +1,260 @@
+        -:    0:Source:calculator_parser.c
+        -:    0:Graph:calculator_parser.gcno
+        -:    0:Data:calculator_parser.gcda
+        -:    0:Runs:9
+        -:    0:Programs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <string.h>
+        -:    3:#include <ctype.h>
+        -:    4:#include <stdlib.h>
+        -:    5:#include <assert.h>
+        -:    6:
+        -:    7:#include "expr.h"
+        -:    8:#include "expr_student.h"
+        -:    9:
+        -:   10:
+        -:   11:/* callback functions, for the 'eval' function pointer */
+        -:   12:float eval_digit(float,float, float right);
+        -:   13:
+        -:   14:float eval_add(float,float, float);
+        -:   15:float eval_sub(float,float, float);
+        -:   16:float eval_mul(float,float, float);
+        -:   17:float eval_div(float,float, float);
+        -:   18:float eval_mod(float,float, float);
+        -:   19:
+        -:   20:
+        -:   21:/* helper function, with the ability to modify the caller's pointer */
+        -:   22:Expr *parseExpr_internal(char **pLine);
+        -:   23:
+        -:   24:
+       39:   25:Expr *parseExpr(char *in)
+        -:   26:{
+       39:   27:	char *line = in;
+        -:   28:
+       39:   29:	Expr *retval = parseExpr_internal(&line);
+       39:   30:	if (retval == NULL)
+       10:   31:		return NULL;
+        -:   32:
+        -:   33:	/* consume whitespace (if any) that was after the expression - so that
+        -:   34:	 * we can determine whether or not there are any additional errors.
+        -:   35:	 */
+       58:   36:	while (isspace(*line))
+    #####:   37:		line++;
+        -:   38:
+       29:   39:	if (*line != '\0')
+        -:   40:	{
+       13:   41:		fprintf(stderr, "SYNTAX ERROR: trailing symbols at: %s\n", line);
+        -:   42:
+       13:   43:		freeExpr(retval);
+       13:   44:		return NULL;
+        -:   45:	}
+        -:   46:
+       16:   47:	return retval;
+        -:   48:}
+        -:   49:
+        -:   50:
+      114:   51:Expr *parseExpr_internal(char **pLine)
+        -:   52:{
+      114:   53:	char *line = *pLine;
+      114:   54:	char *line_orig = line;
+        -:   55:
+        -:   56:	/* consume leading whitespace. */
+      354:   57:	while (isspace(*line))
+      126:   58:		line++;
+        -:   59:
+        -:   60:	/* if there's nothing left in the buffer, then return NULL.  This is
+        -:   61:	 * sometimes an error - but not always, so we won't print an error
+        -:   62:	 * message here.
+        -:   63:	 */
+      114:   64:	if (*line == '\0')
+        4:   65:		return NULL;
+        -:   66:
+        -:   67:
+        -:   68:	/* if the character is not a valid character, then return an error */
+      110:   69:	if (*line != '(' && ! isdigit(*line))
+        -:   70:	{
+        3:   71:		fprintf(stderr, "SYNTAX ERROR: invalid character at: %s\n", line);
+        3:   72:		return NULL;
+        -:   73:	}
+        -:   74:
+        -:   75:
+        -:   76:	/* in both of the possibilities below (parens or digit), we have to
+        -:   77:	 * create a local Expr, but then also look for an operator that might
+        -:   78:	 * follow.
+        -:   79:	 *
+        -:   80:	 * If we find anything *OTHER* than an operator, then we'll return the
+        -:   81:	 * single Expr we've parsed, and let our caller handle the rest.  But
+        -:   82:	 * if we find the operator, then we have more work to do here.
+        -:   83:	 */
+        -:   84:	Expr *left;
+        -:   85:
+        -:   86:
+        -:   87:	/* if there is an open paren, then recurse.  Afterwards, we'll confirm
+        -:   88:	 * that there's a close paren.  But then we have to *KEEP* parsing,
+        -:   89:	 * because the close parent might be followed by an operator.
+        -:   90:	 */
+      107:   91:	if (*line == '(')
+        -:   92:	{
+       15:   93:		line++;
+        -:   94:
+       15:   95:		left = parseExpr_internal(&line);
+       15:   96:		if (left == NULL)
+        2:   97:			return NULL;
+        -:   98:
+        -:   99:		/* consume whitespace after the sub-expression */
+       26:  100:		while (isspace(*line))
+    #####:  101:			line++;
+        -:  102:
+        -:  103:		/* confirm that the closing paren exists */
+       13:  104:		if (*line != ')')
+        -:  105:		{
+        3:  106:			fprintf(stderr, "ERROR: Missing closing paren at: %s\n", line);
+        3:  107:			freeExpr(left);
+        3:  108:			return NULL;
+        -:  109:		}
+        -:  110:
+        -:  111:		/* good case - successful paren parsed */
+       10:  112:		line++;
+       10:  113:		*pLine = line;
+        -:  114:	}
+        -:  115:	else
+        -:  116:	{
+        -:  117:		/* the expression must be a numeral.  It might then be
+        -:  118:		 * followed by an operator, or we might hit end-of-expression
+        -:  119:		 */
+       92:  120:		int intVal = *line - '0';
+       92:  121:		line++;
+        -:  122:
+       92:  123:		left = malloc(sizeof(Expr));
+       92:  124:		if (left == NULL)
+        -:  125:		{
+    #####:  126:			perror("Could not allocate an Expr for a digit");
+    #####:  127:			return NULL;
+        -:  128:		}
+        -:  129:
+       92:  130:		left->origText = strndup(line-1, 1);
+       92:  131:		if (left->origText == NULL)
+        -:  132:		{
+    #####:  133:			perror("Could not strndup() a digit");
+    #####:  134:			freeExpr(left);
+    #####:  135:			return NULL;
+        -:  136:		}
+        -:  137:
+       92:  138:		left->left = left->right = NULL;
+       92:  139:		left->floatVal = intVal;
+       92:  140:		left->eval = &eval_digit;
+        -:  141:	}
+        -:  142:
+        -:  143:
+        -:  144:	/* consume the whitespace after the 'left' expression */
+      363:  145:	while (isspace(*line))
+      159:  146:		line++;
+        -:  147:
+        -:  148:
+        -:  149:	/* do we see an operator?  If not, then just update pLine and
+        -:  150:	 * then return immediately.  The caller might escalate this to
+        -:  151:	 * an error - but we don't need to do that yet.
+        -:  152:	 */
+      161:  153:	if (*line != '+' && *line != '-' &&
+      111:  154:	    *line != '*' && *line != '/' && *line != '%')
+        -:  155:	{
+       42:  156:		*pLine = line;
+       42:  157:		return left;
+        -:  158:	}
+        -:  159:
+        -:  160:
+       60:  161:	char op = *line;
+       60:  162:	line++;
+        -:  163:
+        -:  164:	/* parse the next expression; it will consume the leading
+        -:  165:	 * whitespace, if any
+        -:  166:	 */
+       60:  167:	Expr *right = parseExpr_internal(&line);
+       60:  168:	if (right == NULL)
+        -:  169:	{
+        6:  170:		freeExpr(left);
+        6:  171:		return NULL;
+        -:  172:	}
+        -:  173:
+        -:  174:
+        -:  175:	/* allocate the Expr to represent the binary operator */
+       54:  176:	Expr *binOp = malloc(sizeof(Expr));
+       54:  177:	if (binOp == NULL)
+        -:  178:	{
+    #####:  179:		perror("Could not malloc() an Expr for a binary operator");
+    #####:  180:		freeExpr(left);
+    #####:  181:		freeExpr(right);
+    #####:  182:		return NULL;
+        -:  183:	}
+        -:  184:
+        -:  185:	/* save the text of the original expression */
+       54:  186:	binOp->origText = strndup(line_orig, line-line_orig);
+       54:  187:	if (binOp->origText == NULL)
+        -:  188:	{
+    #####:  189:		perror("Could not strndup() an expression");
+    #####:  190:		freeExpr(left);
+    #####:  191:		freeExpr(right);
+    #####:  192:		freeExpr(binOp);
+    #####:  193:		return NULL;
+        -:  194:	}
+        -:  195:
+       54:  196:	binOp->left     = left;
+       54:  197:	binOp->right    = right;
+       54:  198:	binOp->floatVal = 0;
+        -:  199:
+       54:  200:	if (op == '+')
+       13:  201:		binOp->eval = &eval_add;
+       41:  202:	else if (op == '-')
+       25:  203:		binOp->eval = &eval_sub;
+       16:  204:	else if (op == '*')
+        6:  205:		binOp->eval = &eval_mul;
+       10:  206:	else if (op == '/')
+        5:  207:		binOp->eval = &eval_div;
+        5:  208:	else if (op == '%')
+        5:  209:		binOp->eval = &eval_mod;
+        -:  210:	else
+    #####:  211:		assert(0);
+        -:  212:
+        -:  213:
+        -:  214:	/* return the newly-completed binary operator.  But update
+        -:  215:	 * pLine first!
+        -:  216:	 */
+       54:  217:	*pLine = line;
+       54:  218:	return binOp;
+        -:  219:}
+        -:  220:
+        -:  221:
+        -:  222:
+       55:  223:float eval_digit(float left, float right, float digit)
+        -:  224:{
+       55:  225:	return digit;
+        -:  226:}
+        -:  227:
+        4:  228:float eval_add(float left, float right, float digit)
+        -:  229:{
+        4:  230:	return left+right;
+        -:  231:}
+        -:  232:
+       19:  233:float eval_sub(float left, float right, float digit)
+        -:  234:{
+       19:  235:	return left-right;
+        -:  236:}
+        -:  237:
+        6:  238:float eval_mul(float left, float right, float digit)
+        -:  239:{
+        6:  240:	return left*right;
+        -:  241:}
+        -:  242:
+        5:  243:float eval_div(float left, float right, float digit)
+        -:  244:{
+        5:  245:	return left/right;
+        -:  246:}
+        -:  247:
+        5:  248:float eval_mod(float left, float right, float digit)
+        -:  249:{
+        5:  250:	float quotF = left/right;
+        5:  251:	int   quotI = (int)quotF;
+        5:  252:	return left - (quotI*right);
+        -:  253:}
+        -:  254:
+        -:  255:

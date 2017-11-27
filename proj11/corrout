@@ -1,0 +1,8 @@
+tentacle:
+    thisis = 5
+----- SORTING THE GROUPS -----
+----- JOINING DUPLICATE GROUP NAMES -----
+----- SORTING THE VARIABLES INSIDE EACH GROUP -----
+----- FINAL VERSION -----
+tentacle:
+    thisis = 5

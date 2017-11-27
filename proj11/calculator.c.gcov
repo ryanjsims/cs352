@@ -1,0 +1,67 @@
+        -:    0:Source:calculator.c
+        -:    0:Graph:calculator.gcno
+        -:    0:Data:calculator.gcda
+        -:    0:Runs:5
+        -:    0:Programs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <string.h>
+        -:    4:
+        -:    5:#include "expr.h"
+        -:    6:#include "expr_student.h"
+        -:    7:
+        -:    8:float evalPostOrder(Expr *node);
+        -:    9:char* getExprString();
+        -:   10:
+        5:   11:int main(int argc, char** argv){
+        5:   12:	int retCode = 0;
+        -:   13:	while(1){
+        -:   14:		int rc;
+       24:   15:		char *exprText = getExprString(stdin, &rc);
+       24:   16:		if(rc == EOF)
+        5:   17:			break;
+       19:   18:		Expr *root = parseExpr(exprText);
+       19:   19:		if(root == NULL){
+       13:   20:			printf("ERROR: Could not parse expression!\n");
+       13:   21:			retCode = 1;
+        -:   22:		}
+       19:   23:		printf("%f\n", evalPostOrder(root));
+       19:   24:		freeExpr(root);
+       19:   25:	}
+        5:   26:	return retCode;
+        -:   27:}
+        -:   28:
+       67:   29:float evalPostOrder(Expr *node){
+       67:   30:	if(node == NULL)
+       43:   31:		return 0;
+        -:   32:	float left, right, toReturn;
+       24:   33:	left = evalPostOrder(node->left);
+       24:   34:	right = evalPostOrder(node->right);
+       24:   35:	if(node->left == NULL && node->right == NULL){
+       15:   36:		toReturn = node->eval(left, right, node->floatVal);
+        -:   37:	}
+        -:   38:	else{
+        9:   39:		toReturn = node->eval(left, right, 0);
+        9:   40:		printf("%s = %f\n", node->origText, toReturn);
+        -:   41:	}
+       24:   42:	return toReturn;
+        -:   43:}
+        -:   44:
+       24:   45:char* getExprString(FILE* input, int* rc){
+       24:   46:	printf("> ");
+       24:   47:	char* toReturn = NULL;
+       24:   48:	size_t n = 0;
+       24:   49:	*rc = getline(&toReturn, &n, input);
+       24:   50:	if(toReturn[strlen(toReturn) - 1] == '\n')
+       19:   51:		toReturn[strlen(toReturn) - 1] = '\0';
+       24:   52:	return toReturn;
+        -:   53:}
+        -:   54:
+      124:   55:void freeExpr(Expr* root){
+      124:   56:	if(root == NULL)
+      201:   57:		return;
+       47:   58:	freeExpr(root->left);
+       47:   59:	freeExpr(root->right);
+       47:   60:	free(root->origText);
+       47:   61:	free(root);
+        -:   62:}
