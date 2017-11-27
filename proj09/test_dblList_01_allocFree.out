@@ -1,0 +1,8 @@
+inspect(): Test passed on one object, val=0
+inspect(): Test passed on one object, val=1000
+inspect(): Test passed on one object, val=-1
+inspect(): Test passed on one object, val=17
+inspect(): Test passed on one object, val=0
+inspect(): Test passed on one object, val=123
+inspect(): Test passed on one object, val=-1
+inspect(): Test passed on one object, val=17

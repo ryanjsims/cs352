@@ -1,0 +1,3 @@
+Difference found at byte 19.
+The next 4 bytes of 'compareBytes.c' are:0x23='#' 0x69='i' 0x6e='n' 0x63='c'
+The next 4 bytes of 'bytes.c' are:0x0a=<unprintable> 0x76='v' 0x6f='o' 0x69='i'
